@@ -1,0 +1,14 @@
+{% extends '@CeradApp/base.html.twig' %}
+{% block body %}
+    
+{% if not is_granted('ROLE_USER') %}
+  User: Guest 
+  <a href="{{ path('google_connect') }}">Google</a>
+  <a href="{{ path('github_connect') }}">Github</a>
+{% else %}
+  User: {{ app.user.username }} 
+  <a href="{{ path('logout') }}">Logout</a>
+{% endif %}
+<br />
+Hello
+{% endblock %}

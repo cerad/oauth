@@ -1,0 +1,27 @@
+hwi_oauth:
+    
+  # SSL certificate problem: unable to get local issuer certificate
+  http_client:
+    verify_peer: false
+        
+  # name of the firewall in which this bundle is active, this setting MUST be set
+  firewall_name: secured_area
+
+  resource_owners:
+        
+    # From google developer's console
+    # Create Project (Zayso or Cerad)
+    # API Credentials Create New Client ID Web Application
+    google:
+      type:           google
+      client_id:     %google_client_id%
+      client_secret: %google_client_secret%
+      scope:         "email profile"
+      options:
+        access_type:  offline
+        
+    github:
+      type:           github
+      client_id:     %github_client_id%
+      client_secret: %github_client_secret%
+      
