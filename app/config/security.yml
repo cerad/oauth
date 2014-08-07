@@ -4,6 +4,8 @@ security:
             memory: ~
         hwi:                               
             id: hwi_oauth.user.provider
+        cerad:                               
+            id: cerad_user__user_provider
         
     firewalls:
         dev:
@@ -31,7 +33,7 @@ security:
                 failure_path:      /login
                 
                 oauth_user_provider:
-                    service: hwi_oauth.user.provider
+                    service: cerad_user__user_provider
                    
     access_control:
         - { path: ^/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }

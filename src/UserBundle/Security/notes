@@ -1,0 +1,33 @@
+UserResponseInterface
+
+public function getUsername(); # AKA Identifier
+public function getNickname();
+public function getRealname(); # For PathUserResponse
+
+public function getEmail();
+public function getProfilePicture();
+
+public function getResourceOwner(); # AbstractUserResponse
+
+public function getAccessToken();
+public function getTokenSecret();
+
+                     Github    Google
+getUsername());      130533    113055156735633728525 
+getRealname());      blank     Art Hundiak
+getNickname());      ahundiak  Art Hundiak
+getEmail());         blank     ahundiak@gmail.com
+resourceOwnerName(); github    google
+
+The HWI EntityUserProvider uses resource owner name and 'username'.
+
+For Janrain:
+ https://www.google.com/accounts/o8/id?id=AItOawlw690VK5sxrrejWazT_iCy_cMC6Xs2fv4
+
+As far as I can tell, HWI does not get the janrain identifier at all.
+
+Tried various approaches for github email.  No luck so far.
+
+
+
+
