@@ -1,6 +1,10 @@
 cerad_app:
     resource: "@CeradAppBundle/Resources/config/routing.yml"
     prefix:   /
+    
+cerad_user:
+    resource: "@CeradUserBundle/Resources/config/routing.yml"
+    prefix:   /
 
 hwi_oauth_redirect:
     resource: "@HWIOAuthBundle/Resources/config/routing/redirect.xml"
