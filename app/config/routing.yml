@@ -14,6 +14,10 @@ hwi_oauth_login:
     resource: "@HWIOAuthBundle/Resources/config/routing/login.xml"
     prefix:   /login
     
+hwi_oauth_connect:
+    resource: "@HWIOAuthBundle/Resources/config/routing/connect.xml"
+   #prefix:   /connect
+    
 # These are needed even though security.yml spells out the pattern
 facebook_login:
     pattern: /login/check-facebook

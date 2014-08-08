@@ -11,52 +11,66 @@
 namespace Cerad\Bundle\UserBundle\Doctrine\Security;
 
 use HWI\Bundle\OAuthBundle\OAuth\Response\UserResponseInterface;
+use HWI\Bundle\OAuthBundle\Connect\AccountConnectorInterface;
 use HWI\Bundle\OAuthBundle\Security\Core\User\OAuthAwareUserProviderInterface;
+use HWI\Bundle\OAuthBundle\Security\Core\Exception\AccountNotLinkedException;
 
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 
-/**
- * OAuthUserProvider
- *
- * @author Geoffrey Bachelet <geoffrey.bachelet@gmail.com>
- */
-class UserProvider implements UserProviderInterface, OAuthAwareUserProviderInterface
+class UserProvider implements 
+  UserProviderInterface, 
+  OAuthAwareUserProviderInterface, 
+  AccountConnectorInterface
 {
     protected $userRepo;
     protected $userClass;
+    protected $userAuthenClass;
     
     public function __construct($userRepo)
     {
-        $this->userRepo  = $userRepo;
-        $this->userClass = $userRepo->getClassName();
+        $this->userRepo        = $userRepo;
+        $this->userClass       = $userRepo->getClassName();
+        $this->userAuthenClass = $this->userClass . 'Authen';
     }
     public function loadUserByUsername($username)
     {
-        return new $this->userClass($username);
+        echo sprintf('loadUserByUsername %s<br />',$username);
+        
+        $user = $this->userRepo->findOneByUsername($username);
+        if (!$user)
+        {//die('loadUserByUsername ' . $username);
+            throw new UsernameNotFoundException(sprintf("User '%s' not found.", $username));            
+        }
+        return $user;
     }
     public function loadUserByOAuthUserResponse(UserResponseInterface $response)
     {   
-        $provider = $response->getResourceOwner()->getName();
         $username = $response->getUsername();
-                    
+        $provider = $response->getResourceOwner()->getName();
+        
+      //echo sprintf('loadUserByOAuthUserResponse %s %s<br />',$provider,$username);die();
+        
+        // Do this or have a findByProviderUsername
         $sql  = 'SELECT userId FROM userAuthens WHERE provider = :provider AND username = :username';
         $stmt = $this->userRepo->getConnection()->prepare($sql);
         $stmt->execute(array('provider' => $provider,'username' => $username));
         $rows = $stmt->fetchAll();
         if (count($rows) != 1)
         {
-            throw new UsernameNotFoundException(sprintf("User '%s' '%s' not found.", $provider,$username));
+            throw new AccountNotLinkedException(sprintf("User '%s' '%s' not found.", $provider,$username));
         }
         $userId = (int)$rows[0]['userId'];
         $user = $this->userRepo->find($userId);
         
+      //echo sprintf('loadedUserByOAuthUserResponse %s %d %s<br />',$username,$userId,$user->getUsername()); //die();
+        
         if (!$user)
         {
             // Bad
-            die('user not found');
+            die('user notx found');
         }
         return $user;
       //return $this->loadUserByUsername($response->getUsername());  // Github 130533, Google 113055156735633728525 
@@ -70,13 +84,12 @@ class UserProvider implements UserProviderInterface, OAuthAwareUserProviderInter
      */
     public function refreshUser(UserInterface $user)
     {
-        return $user;
-        
         if (!$this->supportsClass(get_class($user))) {
             throw new UnsupportedUserException(sprintf('Unsupported user class "%s"', get_class($user)));
         }
-
-        return $this->loadUserByUsername($user->getUsername());
+        return $this->userRepo->find($user->getId());
+        
+      //return $this->loadUserByUsername($user->getUsername());
     }
 
     /**
@@ -86,5 +99,20 @@ class UserProvider implements UserProviderInterface, OAuthAwareUserProviderInter
     {
       //die('supportsClass ' . $class . ' ' . $this->userClass);
         return $class === $this->userClass;
+    }
+    /* =================================================
+     * Stash this here for now, probably shoud have it's own class
+     */
+    public function connect(UserInterface $user, UserResponseInterface $userInfo)
+    {
+        $username = $userInfo->getUsername();
+        $provider = $userInfo->getResourceOwner()->getName();
+        
+        $userAuthen = new $this->userAuthenClass($provider,$username,$user);
+        $this->userRepo->persist($user);
+        $this->userRepo->persist($userAuthen);
+        $this->userRepo->flush();
+        
+        return $user;
     }
 }

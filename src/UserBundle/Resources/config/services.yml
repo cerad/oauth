@@ -15,3 +15,23 @@ services:
     class: Cerad\Bundle\UserBundle\Doctrine\Security\UserProvider
     arguments:
       - '@cerad_user__user_repository'
+
+  cerad_user__registration_form:
+    class: Cerad\Bundle\UserBundle\Action\Registration\RegForm
+    factory_service: form.factory
+    factory_method:  create
+    arguments:  
+      - cerad_user__registration_form_type
+      
+  cerad_user__registration_form_type:
+    class: Cerad\Bundle\UserBundle\Action\Registration\RegFormType
+    tags: 
+      - { name: form.type, alias: cerad_user__registration_form_type }
+    arguments:  
+      - '%cerad_user__user_class%'
+    
+  cerad_user__registration_form_handler:
+    class: Cerad\Bundle\UserBundle\Action\Registration\RegFormHandler
+    arguments:  
+      - '@cerad_user__user_repository'
+    

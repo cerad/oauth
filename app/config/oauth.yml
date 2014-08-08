@@ -1,5 +1,11 @@
 hwi_oauth:
     
+  connect: 
+    confirmation: false # should show confirmation page or not
+    registration_form_handler: cerad_user__registration_form_handler
+    registration_form:         cerad_user__registration_form
+    account_connector:         cerad_user__user_provider # can be the same as your user provider
+  
   # SSL certificate problem: unable to get local issuer certificate
   http_client:
     verify_peer: false
@@ -22,7 +28,7 @@ hwi_oauth:
         
     github:
       type:           github
-      scope:         "user,email"
+      scope:         "user:email"
       client_id:     %github_client_id%
       client_secret: %github_client_secret%
       

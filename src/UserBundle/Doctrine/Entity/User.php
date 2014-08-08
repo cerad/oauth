@@ -26,9 +26,12 @@ class User implements UserInterface,  \Serializable
     protected $roles = array('ROLE_USER');
     protected $authens;
     
-    public function __construct($username)
+    public function __construct($username, $email = null, $name = null)
     {
+        $this->name     = $name;
+        $this->email    = $email;
         $this->username = $username;
+        
         $this->salt    = base_convert(sha1(uniqid(mt_rand(), true)), 16, 36);
         $this->authens = new ArrayCollection;
     }
