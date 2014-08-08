@@ -23,5 +23,10 @@ class AbstractRepository extends EntityRepository
     public function flush()          { return $this->getEntityManager()->flush();          }
     public function clear()          { return $this->getEntityManager()->clear();          }
  
-    public function getReference($id) { return $this->getEntityManager()->getReference($this->getEntityName(),$id); }    
+    public function getReference($id) { return $this->getEntityManager()->getReference($this->getEntityName(),$id); }
+    
+    public function getConnection()
+    {
+        return $this->_em->getConnection();
+    }
 }

@@ -12,6 +12,6 @@ services:
       - '%cerad_user__user_class%'
                         
   cerad_user__user_provider:
-    class: Cerad\Bundle\UserBundle\Security\UserProvider
+    class: Cerad\Bundle\UserBundle\Doctrine\Security\UserProvider
     arguments:
       - '@cerad_user__user_repository'

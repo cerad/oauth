@@ -1,0 +1,19 @@
+Cerad\Bundle\UserBundle\Doctrine\Entity\UserAuthen:
+  type:  entity
+  table: userAuthens
+    
+  uniqueConstraints:
+    userAuthenProviderUsername: { columns: 'provider,username' }
+    
+  id: { id: { type: integer, generator: { strategy: AUTO }}}
+            
+  manyToOne:
+    user:
+      targetEntity: User
+      inversedBy:   authens
+      joinColumn: { name: userId, referencedColumnName: id, nullable: false }
+              
+  fields:
+    provider: { type: string, nullable: false }
+    username: { type: string, nullable: false }
+           
