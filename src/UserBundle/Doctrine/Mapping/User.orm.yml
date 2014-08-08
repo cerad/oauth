@@ -1,0 +1,71 @@
+Cerad\Bundle\UserBundle\Doctrine\Entity\User:
+    type:  entity
+    table: users
+    repositoryClass: Cerad\Bundle\UserBundle\Doctrine\Repository\UserRepository
+    
+    id:
+        id:
+            type: integer
+            generator: { strategy: AUTO }
+    
+   #oneToMany:
+   #   authens:
+   #       targetEntity: UserAuthen
+   #       mappedBy:     user
+   #       indexBy:      id
+   #       cascade:      ['all']
+           
+    fields:
+              
+        name:
+            column:   name
+            type:     string
+            nullable: false
+            
+        username:
+            column:   username
+            type:     string
+            unique:   true
+            nullable: false
+            
+        email:
+            column:   email
+            type:     string
+            unique:   true
+            nullable: false
+            
+        emailVerified:
+            column:   emailVerified
+            type:     string
+            length:   20
+            nullable: true
+
+        password:
+            column:   password
+            type:     string
+            nullable: true
+            
+        passwordHint:
+            column:   passwordHint
+            type:     string
+            nullable: true
+            
+        salt:
+            column:   salt
+            type:     string
+            nullable: true
+            
+        roles:
+            type: array
+            
+        personKey:
+            column:   personKey
+            type:     string
+            length:   40
+            nullable: true
+            
+        personVerified:
+            column:   personVerified
+            type:     string
+            length:   20
+            nullable: true

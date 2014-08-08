@@ -1,6 +1,17 @@
 parameters:
 #    cerad_app.example.class: Cerad\Bundle\AppBundle\Example
-
+  cerad_user__user_class: Cerad\Bundle\UserBundle\Doctrine\Entity\User
+  
 services:
+
+  cerad_user__user_repository:
+    class:  Cerad\Bundle\UserBundle\Doctrine\Repository\UserRepository
+    factory_service: doctrine.orm.users_entity_manager
+    factory_method:  getRepository
+    arguments:  
+      - '%cerad_user__user_class%'
+                        
   cerad_user__user_provider:
     class: Cerad\Bundle\UserBundle\Security\UserProvider
+    arguments:
+      - '@cerad_user__user_repository'
