@@ -15,8 +15,8 @@ hwi_oauth:
 
   resource_owners:
         
-    # From google developer's console
-    # Create Project (Zayso or Cerad)
+    # From console.developers.google.com ahundiak@zayso.org
+    # Project = Zayso
     # API Credentials Create New Client ID Web Application
     google:
       type:           google

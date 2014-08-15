@@ -16,14 +16,15 @@ class AbstractRepository extends EntityRepository
     /* ==========================================================
      * Persistence
      */
-    public function persist($entity) { return $this->getEntityManager()->persist($entity); }
-    public function refresh($entity) { return $this->getEntityManager()->refresh($entity); }
-    public function detach ($entity) { return $this->getEntityManager()->detach ($entity); }
-    public function remove ($entity) { return $this->getEntityManager()->remove ($entity); }
-    public function flush()          { return $this->getEntityManager()->flush();          }
-    public function clear()          { return $this->getEntityManager()->clear();          }
+    public function persist($entity) { return $this->_em->persist($entity); }
+    public function refresh($entity) { return $this->_em->refresh($entity); }
+    public function detach ($entity) { return $this->_em->detach ($entity); }
+    public function merge  ($entity) { return $this->_em->merge  ($entity); }
+    public function remove ($entity) { return $this->_em->remove ($entity); }
+    public function flush()          { return $this->_em->flush();          }
+    public function clear()          { return $this->_em->clear();          }
  
-    public function getReference($id) { return $this->getEntityManager()->getReference($this->getEntityName(),$id); }
+    public function getReference($id) { return $this->_em->getReference($this->getEntityName(),$id); }
     
     public function getConnection()
     {

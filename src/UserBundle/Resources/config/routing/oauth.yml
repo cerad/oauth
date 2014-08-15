@@ -1,0 +1,51 @@
+# =============================================================
+# redirect.xml
+
+hwi_oauth_service_redirect:
+    pattern: /connect/{service}
+    defaults:
+        _controller: HWIOAuthBundle:Connect:redirectToService
+        
+# =============================================================
+# login.xml
+# This just puts up a list of connect links
+hwi_oauth_connect:
+    pattern: /login
+    defaults:
+        _controller: HWIOAuthBundle:Connect:connect
+        
+# =============================================================
+# connect.xml
+
+# Connects current user to service
+hwi_oauth_connect_service:
+    pattern: /service/{service}
+    defaults:
+        _controller: HWIOAuthBundle:Connect:connectService
+    
+# For registration
+hwi_oauth_connect_registration:
+    pattern: /registration/{key}
+    defaults:
+        _controller: HWIOAuthBundle:Connect:registration
+    
+# =============================================================
+# Use these intenally to access the oauth server
+# These are hardcoded to match the oauth server
+facebook_login_check:
+    pattern: /login/check-facebook
+
+google_login_check:
+    pattern: /login/check-google
+
+github_login_check:
+    pattern: /login/check-github
+
+# =============================================================
+# Use these to present route to user
+github_connect:
+    pattern: /connect/github
+    
+google_connect:
+    pattern: /connect/google
+    
