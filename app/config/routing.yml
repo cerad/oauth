@@ -5,6 +5,10 @@ cerad_app:
 logout:
     pattern: /logout
     
-cerad_user:
+cerad_user_oauth:
     resource: "@CeradUserBundle/Resources/config/routing/oauth.yml"
+    prefix:   /
+    
+cerad_user:
+    resource: "@CeradUserBundle/Resources/config/routing/routing.yml"
     prefix:   /

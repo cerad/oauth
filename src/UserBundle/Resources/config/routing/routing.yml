@@ -1,0 +1,13 @@
+#cerad_user__homepage:
+#    path:     /
+#   defaults: { _controller: CeradAppBundle:Index:index }
+
+cerad_user__oauth_callback:
+    pattern: /oauth/callback
+    defaults:
+        _controller: CeradUserBundle:OAuth:callback
+        
+cerad_user__oauth_authorize:
+    pattern: /oauth/authorize/{provider}
+    defaults:
+        _controller: CeradUserBundle:OAuth:authorize

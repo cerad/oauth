@@ -1,3 +1,0 @@
-#cerad_user__homepage:
-#    path:     /
-#   defaults: { _controller: CeradAppBundle:Index:index }
