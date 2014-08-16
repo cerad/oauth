@@ -8,6 +8,6 @@ cerad_user__oauth_callback:
         _controller: CeradUserBundle:OAuth:callback
         
 cerad_user__oauth_authorize:
-    pattern: /oauth/authorize/{provider}
+    pattern: /oauth/authorize/{providerName}
     defaults:
         _controller: CeradUserBundle:OAuth:authorize

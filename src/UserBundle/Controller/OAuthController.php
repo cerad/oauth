@@ -8,60 +8,50 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-
-use GuzzleHttp\Client;
+use Cerad\Bundle\UserBundle\OAuth\Provider\GithubProvider;
 
 class OAuthController extends Controller
 {
+    const SESSION_KEY = 'cerad_user__oauth';
+    
+    protected function getCallbackUri(Request $request)
+    {
+        // http://local.oauth.zayso.org/oauth/callback
+        $httpUtils = $this->container->get('security.http_utils');
+        return $httpUtils->generateUri($request,'cerad_user__oauth_callback');
+    }
+    protected function getProvider($name)
+    {
+        $clientId     = $this->container->getParameter($name . '_client_id');
+        $clientSecret = $this->container->getParameter($name . '_client_secret');
+                
+        $providerClass = 'Cerad\\Bundle\\UserBundle\\OAuth\\Provider\\' . ucfirst($name) . 'Provider';
+        
+        return new $providerClass($clientId,$clientSecret);
+    }
     public function callbackAction(Request $request)
     {
+        $providerData = $request->getSession()->get(self::SESSION_KEY);
+        $providerName = $providerData['providerName'];
+        
+        $provider = $this->getProvider($providerName);
+        
         $code  = $request->get('code');
-        $state = $request->get('state');
         
-        $httpUtils = $this->container->get('security.http_utils');
-        $callbackUri = $httpUtils->generateUri($request,'cerad_user__oauth_callback');
+      //$state = $request->get('state');
 
-        $accessTokenParams = array(
-            'grant_type'    => 'authorization_code',
-            'code'          => $code,
-            'client_id'     => $this->container->getParameter('github_client_id'),
-            'client_secret' => $this->container->getParameter('github_client_secret'),
-            'redirect_uri'  => $callbackUri,
-        );
-        $accessTokenUrl = 'https://github.com/login/oauth/access_token';
-      //$accessTokenUrl .= '?' . http_build_query($params);
+        $accessToken = $provider->getAccessToken($code,$this->getCallbackUri($request));
+
+        $userProfile = $provider->getUserProfile($accessToken);
         
-        $client = new Client();
-      //$response = $client->
-        $accessTokenResponse = $client->post($accessTokenUrl,array(
-            'headers' => array('Accept' => 'application/json'),
-            'body' => $accessTokenParams
-        ));
-        $accessTokenData = $accessTokenResponse->json();
-        
-        $accessToken = $accessTokenData['access_token'];
-        
-        $userUrl = 'https://api.github.com/user';
-        
-        $userResponse = $client->get($userUrl,array(
-            'headers' => array(
-                'Accept' => 'application/json',
-                'Authorization'  => 'token ' . $accessToken,
-            ),
-          //'query' => array('access_token' => $accessToken)
-        ));
-        $userResponseData = $userResponse->json();
-        
-        $provider = 'github';
-        $userName = $userResponseData['login'];
-        $name  = $userResponseData['name'];
-        $email = $userResponseData['email'];
+        $userName = $userProfile['login'];
+        $name     = $userProfile['name'];
+        $email    = $userProfile['email'];
         
         $html = <<<EOT
 <table>
-<tr><td>Provider</td><td>$provider</td></tr>
-<tr><td>User    </td><td>$userName</td></tr>
+<tr><td>Provider</td><td>$providerName</td></tr>
+<tr><td>Username</td><td>$userName</td></tr>
 <tr><td>Name    </td><td>$name</td></tr>
 <tr><td>Email   </td><td>$email</td></tr>
 </table>
@@ -78,32 +68,17 @@ EOT;
         
         die('OAuth Callback ' . $accessTokenUrl);
     }
-    public function authorizeAction(Request $request, $provider)
+    // oauth/authorize/provider
+    public function authorizeAction(Request $request, $providerName)
     {
-        // http://local.oauth.zayso.org/oauth/authorize/github
-        $httpUtils = $this->container->get('security.http_utils');
-        $callbackUri = $httpUtils->generateUri($request,'cerad_user__oauth_callback');
+        $provider = $this->getProvider($providerName);
         
-        $clientId = $this->container->getParameter('github_client_id');
+        $request->getSession()->set(self::SESSION_KEY,array('providerName' => $providerName));
         
-        $authorizationUrl = 'https://github.com/login/oauth/authorize';
-        
-        $scope = null;
-        $state = 'Random';
-        
-        $params = array(
-            'response_type' => 'code',
-            'client_id'     => $clientId,
-            'scope'         => $scope,
-            'redirect_uri'  => $callbackUri,
-            'state'         => $state,
-        );
-        $authorizationUrl .= '?' . http_build_query($params);
-        
+        $authorizationUrl = $provider->getAuthorizationUrl($this->getCallbackUri($request));
+    
         return new RedirectResponse($authorizationUrl);
-
-        die($authorizeUrl);
         
-        die('oauth authorize ' . $provider . ' ' . $callbackUri);
+      //die('oauth authorize ' . $provider . ' ' . $callbackUri);
     }
 }
