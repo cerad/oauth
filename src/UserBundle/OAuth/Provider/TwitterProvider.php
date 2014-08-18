@@ -4,7 +4,12 @@ namespace Cerad\Bundle\UserBundle\OAuth\Provider;
 
 use GuzzleHttp\Client;
 
-// Note: Twitter still uses oauth1
+/* ================================================================
+ * Twitter basically does not support user login via oauth2 - very sad
+ * Nor does it provide email even with oauth1
+ * 
+ * See how far we can get by stealing hwi code.
+ */
 class TwitterProvider
 {
     protected $name = 'twitter';
@@ -12,33 +17,18 @@ class TwitterProvider
     protected $clientId;
     protected $clientSecret;
     
-    protected $scope;
+    protected $scope = null;
     
-    protected $userProfileUrl;
-    protected $accessTokenUrl   = '';
-    protected $revertTokenUrl;
+    protected $userProfileUrl   = 'https://api.twitter.com/1.1/account/verify_credentials.json';
+    protected $accessTokenUrl   = 'https://api.twitter.com/oauth/access_token';
+    protected $requestTokenUrl  = 'https://api.twitter.com/oauth/request_token';
     protected $authorizationUrl = 'https://api.twitter.com/oauth/authorize';
-    
-            'authorization_url' => 'https://api.twitter.com/oauth/authenticate',
-            'request_token_url' => 'https://api.twitter.com/oauth/request_token',
-            'access_token_url'  => 'https://api.twitter.com/oauth/access_token',
-            'infos_url'         => 'https://api.twitter.com/1.1/account/verify_credentials.json',
+    protected $authenticationUrl= 'https://api.twitter.com/oauth/authenticate';
      
-    public function __construct(
-        $clientId,
-        $clientSecret,
-        $scope            = null,
-        $authorizationUrl = 'https://github.com/login/oauth/authorize',
-        $accessTokenUrl   = 'https://github.com/login/oauth/access_token',
-        $userProfileUrl   = 'https://api.github.com/user'
-    )
+    public function __construct($clientId,$clientSecret)
     {
         $this->clientId         = $clientId;
         $this->clientSecret     = $clientSecret;
-        $this->scope            = $scope;
-        $this->userProfileUrl   = $userProfileUrl;
-        $this->accessTokenUrl   = $accessTokenUrl;
-        $this->authorizationUrl = $authorizationUrl;
     }
     public function getName() { return $this->name; }
     

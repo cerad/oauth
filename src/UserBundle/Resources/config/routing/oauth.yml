@@ -40,6 +40,9 @@ google_login_check:
 
 github_login_check:
     pattern: /login/check-github
+    
+twitter_login_check:
+    pattern: /login/check-twitter
 
 # =============================================================
 # Use these to present route to user
@@ -48,4 +51,7 @@ github_connect:
     
 google_connect:
     pattern: /connect/google
+    
+twitter_connect:
+    pattern: /connect/twitter
     

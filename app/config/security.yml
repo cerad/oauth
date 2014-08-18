@@ -27,6 +27,7 @@ security:
                    #facebook:    "/login/check-facebook"
                     google:        google_login_check
                     github:        github_login_check
+                    twitter:       twitter_login_check
                 login_path:        /login
                 use_forward:       false
                 failure_path:      /login
