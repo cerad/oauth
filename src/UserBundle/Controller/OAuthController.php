@@ -8,8 +8,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-use Cerad\Bundle\UserBundle\OAuth\Provider\GithubProvider;
-
 class OAuthController extends Controller
 {
     const SESSION_KEY = 'cerad_user__oauth';
@@ -43,7 +41,7 @@ class OAuthController extends Controller
         $accessToken = $provider->getAccessToken($code,$this->getCallbackUri($request));
 
         $userProfile = $provider->getUserProfile($accessToken);
-        
+print_r($userProfile); die();        
         $userName = $userProfile['login'];
         $name     = $userProfile['name'];
         $email    = $userProfile['email'];
