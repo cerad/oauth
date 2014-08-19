@@ -25,5 +25,12 @@ parameters:
 
     google_client_id:      null
     google_client_secret:  null
+
     github_client_id:      null
     github_client_secret:  null
+
+    twitter_client_id:     null
+    twitter_client_secret: null
+
+    twitter_hwi_client_id:     null
+    twitter_hwi_client_secret: null

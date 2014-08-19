@@ -1,0 +1,35 @@
+at Client ->post (
+  'https://api.twitter.com/oauth/request_token', 
+  array('headers' => array('Accept' => 'application/json', 
+  'Authorization: OAuth 
+    oauth_nonce="SomeTwitterState", 
+    oauth_callback="http%3A%2F%2Flocal.oauth.zayso.org%2Foauth%2Fcallback", 
+    oauth_signature_method="HMAC-SHA1", 
+    oauth_timestamp="1408451644", 
+    oauth_consumer_key="jyunTcpin18gkSKAeDLz2A", 
+    oauth_signature="2guluHva61pogC%2FfHsDQ6x0ZQcQ%3D"'))) 
+
+
+in C:\home\ahundiak\zayso2016\oauth\src\UserBundle\OAuth\Provider\TwitterProvider.php at line 122
+
+
+Array ( [0] => Authorization: OAuth 
+  oauth_consumer_key="0xNr0FWrm6kVphaXzYRJiXI82", 
+  oauth_timestamp="1408454978", 
+  oauth_nonce="83d877d2ab6b3a4007f38a838dbc2932", 
+  oauth_version="1.0", 
+  oauth_callback="http%3A%2F%2Flocal.oauth.zayso.org%2Flogin%2Fcheck-twitter", 
+  oauth_signature_method="HMAC-SHA1", 
+  oauth_signature="yjjWiq5J4QIktWce7mZ2zO%2B8HYo%3D" )
+
+Array ( 
+  [0] => User-Agent: HWIOAuthBundle (https://github.com/hwi/HWIOAuthBundle) 
+  [1] => Content-Length: 0 
+  [2] => Authorization: OAuth 
+    oauth_nonce="SomeTwitterState", 
+    oauth_callback="http%3A%2F%2Flocal.oauth.zayso.org%2Foauth%2Fcallback", 
+    oauth_signature_method="HMAC-SHA1", 
+    oauth_timestamp="1408454816", 
+    oauth_consumer_key="jyunTcpin18gkSKAeDLz2A", 
+    oauth_version="1.0", 
+    oauth_signature="BdIeXGJ9J2JlRiuNh3ORcedGN1U%3D" ) 
