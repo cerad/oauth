@@ -16,7 +16,7 @@ class OAuthController extends Controller
     {
         // http://local.oauth.zayso.org/oauth/callback
         $httpUtils = $this->container->get('security.http_utils');
-        return $httpUtils->generateUri($request,'cerad_user__oauth_callback');
+        return $httpUtils->generateUri($request,'cerad_user__oauth_callback',['provider' => 'twitter']);
     }
     protected function getProvider($name)
     {
@@ -27,6 +27,9 @@ class OAuthController extends Controller
         
         return new $providerClass($clientId,$clientSecret);
     }
+    // Twitter http://local.oauth.zayso.org/oauth/callback?
+    //   oauth_token=2Nqr6WnHISAQJfPq56ZiYCdiIfmnuaEKQHgAJOoss&
+    //   oauth_verifier=GhbdJR1Y9ID5ZR4RiOoea8ucZDXUtWEFkaEGnGCfSc
     public function callbackAction(Request $request)
     {
         $providerData = $request->getSession()->get(self::SESSION_KEY);
@@ -38,9 +41,9 @@ class OAuthController extends Controller
         
       //$state = $request->get('state');
 
-        $accessToken = $provider->getAccessToken($code,$this->getCallbackUri($request));
+        $accessToken = $provider->getAccessToken($request,$this->getCallbackUri($request));
 
-        $userProfile = $provider->getUserProfile($accessToken);
+        $userProfile = $provider->getUserProfile($request);
 print_r($userProfile); die();        
         $userName = $userProfile['login'];
         $name     = $userProfile['name'];
@@ -73,7 +76,7 @@ EOT;
         
         $request->getSession()->set(self::SESSION_KEY,array('providerName' => $providerName));
         
-        $authorizationUrl = $provider->getAuthorizationUrl($this->getCallbackUri($request));
+        $authorizationUrl = $provider->getAuthorizationUrl($request,$this->getCallbackUri($request));
     
         return new RedirectResponse($authorizationUrl);
         

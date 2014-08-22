@@ -34,4 +34,9 @@ services:
     class: Cerad\Bundle\UserBundle\Action\Registration\RegFormHandler
     arguments:  
       - '@cerad_user__user_repository'
-    
+ 
+# Works but no container
+ #cerad_user__oauth1__request_token:
+ #  class: Cerad\Bundle\UserBundle\Command\RequestTokenCommand
+ #  tags:
+ #    -  { name: console.command }

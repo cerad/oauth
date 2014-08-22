@@ -3,7 +3,13 @@
 namespace Cerad\Bundle\UserBundle\OAuth\Provider;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Subscriber\Oauth\Oauth1;
+
 use HWI\Bundle\OAuthBundle\Security\OAuthUtils;
+
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+
+use Doctrine\Common\Util\Debug;
 
 /* ================================================================
  * Twitter basically does not support user login via oauth2 - very sad
@@ -20,11 +26,10 @@ class TwitterProvider extends AbstractProvider
     
     protected $scope = null;
     
-    protected $userProfileUrl   = 'https://api.twitter.com/1.1/account/verify_credentials.json';
+    protected $userProfileUrl   = 'https://api.twitter.com/1.1/account/verify_credentials.json?include_entities=false&skip_status=true';
     protected $accessTokenUrl   = 'https://api.twitter.com/oauth/access_token';
     protected $requestTokenUrl  = 'https://api.twitter.com/oauth/request_token';
-    protected $authorizationUrl = 'https://api.twitter.com/oauth/authorize';
-    protected $authenticationUrl= 'https://api.twitter.com/oauth/authenticate';
+    protected $authorizationUrl = 'https://api.twitter.com/oauth/authenticate';
      
     public function __construct($clientId,$clientSecret)
     {
@@ -33,177 +38,51 @@ class TwitterProvider extends AbstractProvider
     }
     public function getName() { return $this->name; }
     
-    /* ==================================================================
-     * Direct copy of HWI\Bundle\OAuthBundle\Security\OAuthUtils::signRequest
-     */
-    protected function httpRequest($url, $content = null, $parameters = array(), $headers = array(), $method = null)
+    public function getAuthorizationUrl(SymfonyRequest $currentRequest,$callbackUri,$state = 'SomeTwitterState')
     {
-        foreach ($parameters as $key => $value) {
-            $parameters[$key] = $key . '="' . rawurlencode($value) . '"';
-        }
-/*
-        if (!$this->options['realm']) {
-            array_unshift($parameters, 'realm="' . rawurlencode($this->options['realm']) . '"');
-        }
-*/
-        $headers[] = 'authorization: OAuth ' . implode(', ', $parameters);
+        $requestTokenClient = new Client();
 
-        return parent::httpRequest($url, $content, $headers, $method);
-    }
+        $oauth = new Oauth1([
+            'consumer_key'    => $this->clientId,
+            'consumer_secret' => $this->clientSecret,
+            'callback'        => $callbackUri,
+        ]);
 
-    protected function signRequest($method,$urlInput,$params,$clientSecret,$tokenSecret = '')
-    {
-        // Validate required parameters
-        foreach (array('oauth_consumer_key','oauth_timestamp','oauth_nonce','oauth_signature_method','oauth_version') as $paramName) {
-            if (!isset($params[$paramName])) {
-                throw new \RuntimeException(sprintf('OAUTH1 SignRequest Parameter "%s" must be set.', $paramName));
-            }
-        }
-        // Remove oauth_signature if present
-        // Ref: Spec: 9.1.1 ("The oauth_signature parameter MUST be excluded.")
-        if (isset($params['oauth_signature'])) {
-            unset($params['oauth_signature']);
-        }
-        // Parse & add query params as base string parameters if they exists
-        $queryParams = array();
-        $urlParts = parse_url($urlInput);
-        if (isset($urlParts['query'])) {
-            parse_str($urlParts['query'], $queryParams);
-            $params += $queryParams;
-        }
-        // Remove default ports
-        // Ref: Spec: 9.1.2
-        $explicitPort = isset($urlParts['port']) ? $urlParts['port'] : null;
-        if (('https' === $urlParts['scheme'] && 443 === $explicitPort) || 
-            ( 'http' === $urlParts['scheme'] &&  80 === $explicitPort)) {
-            $explicitPort = null;
-        }
-        // Remove query params from URL
-        // Ref: Spec: 9.1.2
-        $urlGenerated = sprintf('%s://%s%s%s', 
-            $urlParts['scheme'], 
-            $urlParts['host'  ], 
-           ($explicitPort ? ':'.$explicitPort : ''), 
-            isset($urlParts['path']) ? $urlParts['path'] : ''
-        );
-        // Parameters are sorted by name, using lexicographical byte value ordering.
-        // Ref: Spec: 9.1.1 (1)
-        uksort($params, 'strcmp');
-        // http_build_query should use RFC3986
-        
-        $parts = array(
-            // HTTP method name must be uppercase
-            // Ref: Spec: 9.1.3 (1)
-            strtoupper($method),
-            rawurlencode($urlGenerated),
-            rawurlencode(str_replace(array('%7E', '+'), array('~', '%20'), http_build_query($params, '', '&'))),
-        );
-        $baseString = implode('&', $parts);
-        
-        // HMAC
-        $keyParts = array(rawurlencode($clientSecret),rawurlencode($tokenSecret));
-        
-        $signature = hash_hmac('sha1', $baseString, implode('&', $keyParts), true);
-        
-        return base64_encode($signature);
-    }
-    protected function getRequestToken($callbackUri, $state)
-    {
-        $timestamp = time();
+        $requestTokenClient->getEmitter()->attach($oauth);
 
-        // https://dev.twitter.com/docs/api/1/post/oauth/request_token
-        // http://tools.ietf.org/html/rfc5849
-        $params = array(
-            'oauth_consumer_key'     => $this->clientId,
-            'oauth_timestamp'        => $timestamp,
-            'oauth_nonce'            => $state,
-            'oauth_version'          => '1.0', // Optional
-            'oauth_callback'         => $callbackUri,
-            'oauth_signature_method' => 'HMAC-SHA1',
-        );
-        $sig = OAuthUtils::signRequest('POST',$this->requestTokenUrl,$params,$this->clientSecret,'','HMAC-SHA1');
-        echo 'Sig 1 ' . $sig . '<br />';
+        $requestTokenResponse = $requestTokenClient->post($this->requestTokenUrl,[
+            'auth'   => 'oauth',
+            'debug'  => false,
+            'verify' => false,
+        ]);
+        $requestTokenResponseData = array();
+        parse_str($requestTokenResponse->getBody(),$requestTokenResponseData);
+
+        $sessionData = [
+            'providerName'       => $this->name,
+            'requestToken'       => $requestTokenResponseData['oauth_token'],
+            'requestTokenSecret' => $requestTokenResponseData['oauth_token_secret'],
+            'callbackConfirmed'  => $requestTokenResponseData['oauth_callback_confirmed'],
+        ];
+        $currentRequest->getSession()->set('cerad_user__oauth',$sessionData);
         
-        $params['oauth_signature'] = 
-            $this->signRequest('POST',$this->requestTokenUrl,$params,$this->clientSecret);
-        
-        echo 'Sig 3 ' . $params['oauth_signature'] . '<br />';
-        
-        $apiResponse = $this->httpRequest($this->requestTokenUrl, null, $params, array(), 'POST');
-        $responseInfo = $this->getResponseContent($apiResponse);
-        print_r($responseInfo); die();
-        // Make the Auth
-        foreach($params as $key => $value) {
-            $params[$key] = $key . '="' . rawurlencode($value) . '"';
-        }
-        
-        // Headers
-        $headers = array(
-            'User-Agent: HWIOAuthBundle (https://github.com/hwi/HWIOAuthBundle)',
-            'Content-Length: ' . 0,
-            'Authorization: OAuth ' . implode(', ', $params),
-        );
-        print_r($headers); echo '<br />';
-        $client = new Client();
-        
-        try{
-            $response = $client->post($this->requestTokenUrl,array(
-                'headers' => $headers,
-                'body' => null,
-            ));
-        }
-        catch (\Exception $e)
-        {
-            die('Response Exception ' . $e->getMessage());
-        }
-        $responseData = $response->json();
-        
-        if (is_array($responseData)) print_r($responseData);
-        
-        die('getRequestToken');
-
-        $apiResponse = $this->httpRequest($url, null, $parameters, array(), HttpRequestInterface::METHOD_POST);
-die('request token' . $url);
-
-        $response = $this->getResponseContent($apiResponse);
-
-        if (isset($response['oauth_problem'])) {
-            throw new AuthenticationException(sprintf('OAuth error: "%s"', $response['oauth_problem']));
-        }
-
-        if (isset($response['oauth_callback_confirmed']) && ($response['oauth_callback_confirmed'] != 'true')) {
-            throw new AuthenticationException('Defined OAuth callback was not confirmed.');
-        }
-
-        if (!isset($response['oauth_token']) || !isset($response['oauth_token_secret'])) {
-            throw new AuthenticationException('Not a valid request token.');
-        }
-
-        $response['timestamp'] = $timestamp;
-
-        $this->storage->save($this, $response);
-
-        return $response;        
-    }
-    public function getAuthorizationUrl($callbackUri,$state = 'SomeTwitterState')
-    {
-        $requestToken = $this->getRequestToken($callbackUri,$state);
-        die('Twitter requestToken ' . $requestToken);
+        $authorizationClient = new Client();
+        $authorizationRequest = $authorizationClient->createRequest('GET',$this->authorizationUrl,[
+            'query' => ['oauth_token' => $requestTokenResponseData['oauth_token']]
+        ]);
+        return $authorizationRequest->getUrl();
         
         $params = array(
-            'response_type' => 'code',
-            'client_id'     => $this->clientId,
-            'scope'         => $this->scope,
-            'redirect_uri'  => $callbackUri,
-            'state'         => $state,
+            'oauth_token' => $requestTokenResponseData['oauth_token'],
         );
+        print_r($sessionData); die();
         return $this->authorizationUrl . '?' . http_build_query($params);
     }
     public function getAccessTokenUrl()
     {
         return $this->accessTokenUrl;
     }
-    public function getAccessTokenQuery($code,$callbackUri)
+    public function getAccessTokenQuery($code)
     {
         $accessTokenQuery = array(
             'grant_type'    => 'authorization_code',
@@ -214,33 +93,85 @@ die('request token' . $url);
         );
         return $accessTokenQuery;
     }
-    public function getAccessToken($code,$callbackUri)
+    public function getAccessToken(SymfonyRequest $symfonyRequest,$callbackUri)
     {
-        $client = new Client();
+        // Twitter might have a denied
+        $storage = $symfonyRequest->getSession();
+        $storageData = $storage->get('cerad_user__oauth');
         
-        $response = $client->post($this->accessTokenUrl,array(
-            'headers' => array('Accept' => 'application/json'),
-            'body' => $this->getAccessTokenQuery($code,$callbackUri)
-        ));
-        $responseData = $response->json();
+        $accessTokenClient = new Client();
         
-        return $responseData['access_token'];
+        $oauth = new Oauth1([
+            'consumer_key'    => $this->clientId,
+            'consumer_secret' => $this->clientSecret,
+            'token'           => $storageData['requestToken'],
+            'token_secret'    => $storageData['requestTokenSecret'],
+            'verifier'        => $symfonyRequest->get('oauth_verifier'),
+        ]);
+        $accessTokenClient->getEmitter()->attach($oauth);
+
+        $accessTokenResponse = $accessTokenClient->post($this->accessTokenUrl,[
+            'auth'   => 'oauth',
+            'debug'  => false,
+            'verify' => false,
+          //'body'   => ['oauth_verifier' => $symfonyRequest->get('oauth_verifier')]
+        ]);
+        $accessTokenResponseData = array();
+        parse_str($accessTokenResponse->getBody(),$accessTokenResponseData);
+        
+        $storageData['accessToken']       = $accessTokenResponseData['oauth_token'];
+        $storageData['accessTokenSecret'] = $accessTokenResponseData['oauth_token_secret'];
+        
+        $storageData['userId']     = $accessTokenResponseData['user_id'];
+        $storageData['screenName'] = $accessTokenResponseData['screen_name'];
+        
+        $storage->set('cerad_user__oauth',$storageData);
+        
+        return $storageData;
+        
+        print_r($storageData); die();
+        
     }
     public function getUserProfileUrl()
     {
         return $this->userProfileUrl;
     }
-    public function getUserProfile($accessToken)
+    public function getUserProfile(SymfonyRequest $symfonyRequest)
     {
-        $client = new Client();
+        $storage = $symfonyRequest->getSession();
+        $storageData = $storage->get('cerad_user__oauth');
         
-        $response = $client->get($this->userProfileUrl,array(
-            'headers' => array(
-                'Accept' => 'application/json',
-                'Authorization'  => 'Bearer ' . $accessToken,
-            ),
-        ));
-        // TODO: Add providerName
-        return $response->json();
+        $userProfileClient = new Client();
+        
+        $oauth = new Oauth1([
+            'consumer_key'    => $this->clientId,
+            'consumer_secret' => $this->clientSecret,
+            'token'           => $storageData['accessToken'],
+            'token_secret'    => $storageData['accessTokenSecret'],
+        ]);
+        $userProfileClient->getEmitter()->attach($oauth);
+
+        $userProfileResponse = $userProfileClient->get($this->userProfileUrl,[
+            'auth'   => 'oauth',
+            'debug'  => false,
+            'verify' => false,
+            'query'  => ['include_entities' => 'false', 'skip_status' => 'false'],
+        ]);
+        $userProfileResponseData = array();
+        parse_str($userProfileResponse->getBody(),$userProfileResponseData);
+        
+        print_r($userProfileResponseData); die();
     }
+    /*
+     * Array ( 
+     * [{"id":49477179,
+     *   "id_str":"49477179",
+     *   "name":"Art_Hundiak",
+     *   "screen_name":"ahundiak",
+     *   "location":"","description":"","url":null,
+     *   "entities":{"description":{"urls":] => 
+     *     Array ( [0] => ) [Canada)","geo_enabled":false,"verified":false,"statuses_count":0,"lang":"en",
+     *    "contributors_enabled":false,"is_translator":false,"is_translation_enabled":false,
+     *    "profile_background_color":"C0DEED","profile_background_image_url":"http:\/\/abs_twimg_com\/images\/themes\/theme1\/bg_png","profile_background_image_url_https":"https:\/\/abs_twimg_com\/images\/themes\/theme1\/bg_png","profile_background_tile":false,"profile_image_url":"http:\/\/abs_twimg_com\/sticky\/default_profile_images\/default_profile_3_normal_png","profile_image_url_https":"https:\/\/abs_twimg_com\/sticky\/default_profile_images\/default_profile_3_normal_png","profile_link_color":"0084B4","profile_sidebar_border_color":"C0DEED","profile_sidebar_fill_color":"DDEEF6","profile_text_color":"333333","profile_use_background_image":true,"default_profile":true,"default_profile_image":true,"following":false,"follow_request_sent":false,"notifications":false}] => )
+     */
 }

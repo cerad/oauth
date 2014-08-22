@@ -30,8 +30,8 @@ class AbstractProvider
 
         $headers = array_merge(
             array(
-                'User-Agent: HWIOAuthBundle (https://github.com/hwi/HWIOAuthBundle)',
-                'Content-Length: ' . $contentLength,
+              //'User-Agent: HWIOAuthBundle (https://github.com/hwi/HWIOAuthBundle)',
+              //'Content-Length: ' . $contentLength,
             ),
             $headers
         );
@@ -46,20 +46,22 @@ class AbstractProvider
                 ]
             ]
         ]);*/
-       
+        $guzzle = true;
+        if ($guzzle) {
         $guzzleClient = new GuzzleClient();
       //$guzzleClient->setDefaultConfig('defaults/verify', false);
         try{
             $guzzleResponse = $guzzleClient->post($url,array(
                 'headers' => $headers,
-                'verify' => false,
+              //'verify'  => false,
+                'debug'   => true,
             ));
         }
         catch (\Exception $e)
         {
             die('Response X Exception ' . $e->getMessage());
         }
-die('ok');
+        } else {
 
         $buzzRequest  = new HttpRequest($method, $url);
         $buzzResponse = new HttpResponse();
@@ -70,8 +72,9 @@ die('ok');
         $buzzClient = new BuzzCurl();
         $buzzClient->setVerifyPeer(false);
         $buzzClient->send($buzzRequest, $buzzResponse);
-
+echo sprintf("buzzResponse Code: %d <br />\n",$buzzResponse->getStatusCode());
         return $buzzResponse;
+        }
     }
     protected function getResponseContent(HttpMessageInterface $rawResponse)
     {
