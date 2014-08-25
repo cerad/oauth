@@ -11,29 +11,17 @@ class GoogleProvider
     protected $clientId;
     protected $clientSecret;
     
-    protected $scope;
-    protected $userProfileUrl;
-    protected $accessTokenUrl;
-    protected $authorizationUrl;
+    protected $scope = 'openid profile email';
     
-    // https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email
-    public function __construct(
-        $clientId,
-        $clientSecret,
-        $scope            = 'openid profile email', // openid
-        $authorizationUrl = 'https://accounts.google.com/o/oauth2/auth',   // base URI
-        $accessTokenUrl   = 'https://accounts.google.com/o/oauth2/token',
-        $userProfileUrl   = 'https://www.googleapis.com/oauth2/v2/userinfo' // not documented, v1 is depreciated
-//      $userProfileUrl   = 'https://www.googleapis.com/plus/v1/people/me/openIdConnect'
-//      $userProfileUrl   = 'https://www.googleapis.com/plus/v1/people/me' // people.get
-    )
+    protected $userProfileUrl   = 'https://www.googleapis.com/oauth2/v2/userinfo';
+    protected $accessTokenUrl   = 'https://accounts.google.com/o/oauth2/token';
+    protected $authorizationUrl = 'https://accounts.google.com/o/oauth2/auth';
+    
+    public function __construct($name,$clientId,$clientSecret)
     {
-        $this->clientId         = $clientId;
-        $this->clientSecret     = $clientSecret;
-        $this->scope            = $scope;
-        $this->userProfileUrl   = $userProfileUrl;
-        $this->accessTokenUrl   = $accessTokenUrl;
-        $this->authorizationUrl = $authorizationUrl;
+        $this->name         = $name;
+        $this->clientId     = $clientId;
+        $this->clientSecret = $clientSecret;
     }
     public function getName() { return $this->name; }
     

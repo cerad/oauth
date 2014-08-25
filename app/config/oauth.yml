@@ -1,3 +1,17 @@
+cerad_user:
+  oauth:
+    providers:
+      -
+        name:  google
+        class: Cerad\Bundle\UserBundle\OAuth\Provider\GoogleProvider
+        client_id:     %google_client_id%
+        client_secret: %google_client_secret%
+      -
+        name: facebook
+        class: Cerad\Bundle\UserBundle\OAuth\Provider\FacebookProvider
+        client_id:     %facebook_client_id%
+        client_secret: %facebook_client_secret%
+                
 hwi_oauth:
     
   connect: 
