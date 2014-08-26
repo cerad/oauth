@@ -13,3 +13,4 @@
 /app/SymfonyRequirements.php
 /app/check.php
 /composer.lock
+/web/app.php
