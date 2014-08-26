@@ -40,7 +40,8 @@ services:
  #  class: Cerad\Bundle\UserBundle\Command\RequestTokenCommand
  #  tags:
  #    -  { name: console.command }
-  cerad_user__oauth__providers:
+  cerad_user__oauth__provider_manager:
     class: Cerad\Bundle\UserBundle\OAuth\Providers
     arguments:  
+      - '@security.http_utils'
       - '%cerad_user__oauth__providers%'

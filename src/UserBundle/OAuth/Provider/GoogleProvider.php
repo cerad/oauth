@@ -2,84 +2,42 @@
 
 namespace Cerad\Bundle\UserBundle\OAuth\Provider;
 
-use GuzzleHttp\Client;
-
-class GoogleProvider
-{
-    protected $name = 'google';
-    
-    protected $clientId;
-    protected $clientSecret;
-    
+class GoogleProvider extends AbstractProvider
+{   
     protected $scope = 'openid profile email';
     
-    protected $userProfileUrl   = 'https://www.googleapis.com/oauth2/v2/userinfo';
+    protected $userInfoUrl      = 'https://www.googleapis.com/oauth2/v2/userinfo';
     protected $accessTokenUrl   = 'https://accounts.google.com/o/oauth2/token';
     protected $authorizationUrl = 'https://accounts.google.com/o/oauth2/auth';
     
-    public function __construct($name,$clientId,$clientSecret)
+    public function getUserInfo($accessToken)
     {
-        $this->name         = $name;
-        $this->clientId     = $clientId;
-        $this->clientSecret = $clientSecret;
-    }
-    public function getName() { return $this->name; }
-    
-    public function getAuthorizationUrl($callbackUri,$state = 'SomeGoogleState')
-    {
-        $params = array(
-            'response_type' => 'code',
-            'client_id'     => $this->clientId,
-            'scope'         => $this->scope,
-            'redirect_uri'  => $callbackUri,
-            'state'         => $state,
-        );
-        return $this->authorizationUrl . '?' . http_build_query($params);
-    }
-    public function getAccessTokenUrl()
-    {
-        return $this->accessTokenUrl;
-    }
-    public function getAccessTokenQuery($code,$callbackUri)
-    {
-        $accessTokenQuery = array(
-            'grant_type'    => 'authorization_code',
-            'code'          => $code,
-            'client_id'     => $this->clientId,
-            'client_secret' => $this->clientSecret,
-            'redirect_uri'  => $callbackUri,
-        );
-        return $accessTokenQuery;
-    }
-    public function getAccessToken($code,$callbackUri)
-    {
-        $client = new Client();
+        $data = $this->getUserInfoData($accessToken);
         
-        $response = $client->post($this->accessTokenUrl,array(
-            'headers' => array('Accept' => 'application/json'),
-            'body' => $this->getAccessTokenQuery($code,$callbackUri)
-        ));
-        $responseData = $response->json();
-
-        return $responseData['access_token'];
-    }
-    public function getUserProfileUrl()
-    {
-        return $this->userProfileUrl;
-    }
-    public function getUserProfile($accessToken)
-    {
-        $client = new Client();
+        $nameParts = explode('@',$data['email']);
+        $nickname = count($nameParts) ? $nameParts[0] : null;
         
-        $response = $client->get($this->userProfileUrl,array(
-            'headers' => array(
-                'Accept' => 'application/json',
-                'Authorization'  => 'Bearer ' . $accessToken,
-            ),
-        ));
-        $responseData = $response->json();
-        print_r($responseData); die();
-        // TODO: Add providerName
-        return $response->json();
+        $userInfo = array(
+            'identifier'     => $data['id'],
+            'nickname'       => $nickname,
+            'realname'       => $data['name'],
+            'email'          => $data['email'],
+            'profilepicture' => null,
+            'providername'   => $this->name,
+        );
+        return $userInfo;
     }
+    /* Array ( 
+     *   [id] => 110360268001715642098 
+     *   [email] => ahundiak@zayso.org 
+     *   [verified_email] => 1 
+     *   [name] => Arthur Hundiak 
+     *   [given_name] => Arthur
+     *   [family_name] => Hundiak
+     *   [link] => https://plus.google.com/110360268001715642098
+     *   [picture] => https://lh3.googleusercontent.com/-KDDHRXRz07U/AAAAAAAAAAI/AAAAAAAAAAo/_e8-j-zb2os/photo.jpg 
+     *   [gender] => male [locale] => en [hd] => zayso.org 
+     * )
+     * 
+     */
 }

@@ -11,6 +11,11 @@ cerad_user:
         class: Cerad\Bundle\UserBundle\OAuth\Provider\FacebookProvider
         client_id:     %facebook_client_id%
         client_secret: %facebook_client_secret%
+      -
+        name: github
+        class: Cerad\Bundle\UserBundle\OAuth\Provider\GithubProvider
+        client_id:     %github_client_id%
+        client_secret: %github_client_secret%
                 
 hwi_oauth:
     

@@ -2,94 +2,103 @@
 
 namespace Cerad\Bundle\UserBundle\OAuth\Provider;
 
-use Buzz\Client\ClientInterface as HttpClientInterface;
+use GuzzleHttp\Client;
 
-use Buzz\Client\Curl as BuzzCurl;
+use Symfony\Component\HttpFoundation\Request;
 
-use Buzz\Message\MessageInterface as HttpMessageInterface;
-use Buzz\Message\Request as HttpRequest;
-use Buzz\Message\RequestInterface as HttpRequestInterface;
-use Buzz\Message\Response as HttpResponse;
-
-use GuzzleHttp\Client as GuzzleClient;
+use Cerad\Bundle\UserBundle\OAuth\Providers as ProviderManager;
 
 class AbstractProvider
 {
-    protected function httpRequest($url, $content = null, $headers = array(), $method = null)
+    protected $providerManager;
+    
+    protected $name;
+    
+    protected $client;
+    protected $clientId;
+    protected $clientSecret;
+    
+    protected $scope;
+    
+    protected $userProfileUrl;
+    protected $accessTokenUrl;
+    protected $revokeTokenUrl;
+    protected $authorizationUrl;
+    
+    public function __construct(ProviderManager $providerManager,$name,$clientId,$clientSecret)
     {
-        if (null === $method) {
-            $method = null === $content ? HttpRequestInterface::METHOD_GET : HttpRequestInterface::METHOD_POST;
-        }
-
-        $contentLength = 0;
-        if (is_string($content)) {
-            $contentLength = strlen($content);
-        } elseif (is_array($content)) {
-            $contentLength = strlen(implode('', $content));
-        }
-
-        $headers = array_merge(
-            array(
-              //'User-Agent: HWIOAuthBundle (https://github.com/hwi/HWIOAuthBundle)',
-              //'Content-Length: ' . $contentLength,
-            ),
-            $headers
-        );
-        print_r($headers); echo '<br />';
-        /*
-        $guzzleClient = new GuzzleClient([
-            'defaults' => [
-                'config' => [
-                    'curl' => [
-                        CURLOPT_SSL_VERIFYPEER => false,
-                    ]
-                ]
-            ]
-        ]);*/
-        $guzzle = true;
-        if ($guzzle) {
-        $guzzleClient = new GuzzleClient();
-      //$guzzleClient->setDefaultConfig('defaults/verify', false);
-        try{
-            $guzzleResponse = $guzzleClient->post($url,array(
-                'headers' => $headers,
-              //'verify'  => false,
-                'debug'   => true,
-            ));
-        }
-        catch (\Exception $e)
-        {
-            die('Response X Exception ' . $e->getMessage());
-        }
-        } else {
-
-        $buzzRequest  = new HttpRequest($method, $url);
-        $buzzResponse = new HttpResponse();
+        $this->providerManager = $providerManager;
         
-        $buzzRequest->setHeaders($headers);
-      //$buzzRequest->setContent($content);
+        $this->name         = $name;
+        $this->clientId     = $clientId;
+        $this->clientSecret = $clientSecret;
         
-        $buzzClient = new BuzzCurl();
-        $buzzClient->setVerifyPeer(false);
-        $buzzClient->send($buzzRequest, $buzzResponse);
-echo sprintf("buzzResponse Code: %d <br />\n",$buzzResponse->getStatusCode());
-        return $buzzResponse;
-        }
+        $this->client = new Client;
     }
-    protected function getResponseContent(HttpMessageInterface $rawResponse)
+    public function getName() { return $this->name; }
+    
+    public function getAuthorizationUrl(Request $request)
     {
-        // First check that content in response exists, due too bug: https://bugs.php.net/bug.php?id=54484
-        $content = $rawResponse->getContent();
+        $redirectUri = $this->providerManager->getRedirectUri($request);
+        
+        $state = $this->providerManager->generateState($request,$this->name);
+        
+        $query = array(
+            'response_type' => 'code',
+            'client_id'     => $this->clientId,
+            'scope'         => $this->scope,
+            'redirect_uri'  => $redirectUri,
+            'state'         => $state,
+        );
+        $request = $this->client->createRequest('GET',$this->authorizationUrl,[
+            'query' => $query,
+        ]);
+        return $request->getUrl();
+    }
+    public function getAccessToken(Request $request)
+    {
+        $query = array(
+            'grant_type'    => 'authorization_code',
+            'code'          => $request->query->get('code'),
+            'client_id'     => $this->clientId,
+            'client_secret' => $this->clientSecret,
+            'redirect_uri'  => $this->providerManager->getRedirectUri($request),
+        );
+        
+        $response = $this->client->post($this->accessTokenUrl,array(
+            'headers' => array('Accept' => 'application/json'),
+            'body' => $query,
+        ));
+        $responseData = $this->getResponseData($response);
+
+        return $responseData;
+        
+      //return $responseData['access_token'];
+    }
+    public function getUserInfoData($accessToken)
+    {
+        $response = $this->client->get($this->userInfoUrl,array(
+            'headers' => array(
+                'Accept' => 'application/json',
+                'Authorization'  => 'Bearer ' . $accessToken['access_token'],
+            ),
+        ));
+        return $this->getResponseData($response);
+    }    
+    // Return array from either json or name-value
+    protected function getResponseData($response)
+    {
+        $content = (string)$response->getBody();
+        
         if (!$content) {
             return array();
         }
-
-        $response = json_decode($content, true);
-        if (JSON_ERROR_NONE !== json_last_error()) {
-            parse_str($content, $response);
+        $json = json_decode($content, true);
+        if (JSON_ERROR_NONE === json_last_error()) {
+            return $json;
         }
-
-        return $response;
+        $data = array();
+        parse_str($content, $data);
+        return $data;
     }
-    
 }

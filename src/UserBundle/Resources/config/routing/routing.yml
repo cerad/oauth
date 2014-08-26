@@ -1,8 +1,8 @@
 #cerad_user__homepage:
 #    path:     /
 #   defaults: { _controller: CeradAppBundle:Index:index }
-
-cerad_user__oauth_callback:
+        
+cerad_user__oauth__redirect:
     pattern: /oauth/callback
     defaults:
         _controller: CeradUserBundle:OAuth:callback
