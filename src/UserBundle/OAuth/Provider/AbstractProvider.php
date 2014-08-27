@@ -6,7 +6,7 @@ use GuzzleHttp\Client;
 
 use Symfony\Component\HttpFoundation\Request;
 
-use Cerad\Bundle\UserBundle\OAuth\Providers as ProviderManager;
+use Cerad\Bundle\UserBundle\OAuth\ProviderManager;
 
 class AbstractProvider
 {
@@ -38,17 +38,13 @@ class AbstractProvider
     public function getName() { return $this->name; }
     
     public function getAuthorizationUrl(Request $request)
-    {
-        $redirectUri = $this->providerManager->getRedirectUri($request);
-        
-        $state = $this->providerManager->generateState($request,$this->name);
-        
+    {   
         $query = array(
             'response_type' => 'code',
             'client_id'     => $this->clientId,
             'scope'         => $this->scope,
-            'redirect_uri'  => $redirectUri,
-            'state'         => $state,
+            'redirect_uri'  => $this->getRedirectUri($request),
+            'state'         => $this->generateState(),
         );
         $request = $this->client->createRequest('GET',$this->authorizationUrl,[
             'query' => $query,
@@ -62,7 +58,7 @@ class AbstractProvider
             'code'          => $request->query->get('code'),
             'client_id'     => $this->clientId,
             'client_secret' => $this->clientSecret,
-            'redirect_uri'  => $this->providerManager->getRedirectUri($request),
+            'redirect_uri'  => $this->getRedirectUri($request),
         );
         
         $response = $this->client->post($this->accessTokenUrl,array(
@@ -72,8 +68,6 @@ class AbstractProvider
         $responseData = $this->getResponseData($response);
 
         return $responseData;
-        
-      //return $responseData['access_token'];
     }
     public function getUserInfoData($accessToken)
     {
@@ -100,5 +94,13 @@ class AbstractProvider
         $data = array();
         parse_str($content, $data);
         return $data;
+    }
+    protected function getRedirectUri(Request $request)
+    {
+        return $this->providerManager->getRedirectUri($request);
+    }
+    protected function generateState()
+    {
+        return $this->providerManager->generateState();
     }
 }

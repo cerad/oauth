@@ -21,6 +21,11 @@ cerad_user:
         class: Cerad\Bundle\UserBundle\OAuth\Provider\LinkedinProvider
         client_id:     %linkedin_client_id%
         client_secret: %linkedin_client_secret%
+      -
+        name: twitter
+        class: Cerad\Bundle\UserBundle\OAuth\Provider\TwitterProvider
+        client_id:     %twitter_client_id%
+        client_secret: %twitter_client_secret%
                 
 hwi_oauth:
     

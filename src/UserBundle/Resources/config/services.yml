@@ -41,7 +41,8 @@ services:
  #  tags:
  #    -  { name: console.command }
   cerad_user__oauth__provider_manager:
-    class: Cerad\Bundle\UserBundle\OAuth\Providers
+    class: Cerad\Bundle\UserBundle\OAuth\ProviderManager
     arguments:  
       - '@security.http_utils'
+      - '@session'
       - '%cerad_user__oauth__providers%'

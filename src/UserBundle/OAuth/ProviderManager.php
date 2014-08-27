@@ -4,17 +4,24 @@ namespace Cerad\Bundle\UserBundle\OAuth;
 
 use Symfony\Component\Security\Http\HttpUtils;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
 
-
-class Providers
+class ProviderManager
 {
+    const STORAGE_KEY_PROVIDER_NAME = 'cerad_user__oauth__provider_name';
+    const STORAGE_KEY_STATE         = 'cerad_user__oauth__state';
+    const STORAGE_KEY_REQUEST_TOKEN = 'cerad_user__oauth__request_token';
+  //const STORAGE_KEY_ACCESS_TOKEN  = 'cerad_user__oauth__access_token';
+    
     protected $map;
     protected $httpUtils;
+    protected $storage;
     protected $redirectUriName = 'cerad_user__oauth__redirect';
     
-    public function __construct(HttpUtils $httpUtils,$providers)
+    public function __construct(HttpUtils $httpUtils,Session $storage,$providers)
     {
         $this->httpUtils = $httpUtils;
+        $this->storage = $storage;
         
         foreach($providers as $provider) {
             $provider['instance'] = null;
@@ -39,37 +46,39 @@ class Providers
         
         $this->map[$name]['instance'] = $instance;
         
+        // Maybe unset the other stuff?
+        $this->storage->set(self::STORAGE_KEY_PROVIDER_NAME,$name);
+        
         return $instance;
     }
     // Process a redirection from the provider site
     public function createFromRequest(Request $request)
     {
+        // OAuth1 will not have state
         $requestState = $request->query->get('state');
-        $storageState = $request->getSession()->get('cerad_user__oauth__state');
-        if ($requestState != $storageState) {
+        $storageState = $this->storage->get(self::STORAGE_KEY_STATE);
+        
+        if ($requestState && ($requestState != $storageState)) {
             throw new \Exception("OAuth State Mismatch");
         }
-        $parts = explode(':',$requestState);
-        if (count($parts) != 2) {
-            throw new \Exception("OAuth State Invalid Format");
-        }
-        return $this->createFromName($parts[0]);
+        
+        // Name was stored in session
+        $name = $this->storage->get(self::STORAGE_KEY_PROVIDER_NAME);
+        
+        return $this->createFromName($name);
     }
     public function getRedirectUri(Request $request)
     {
         // http://local.oauth.zayso.org/oauth/callback
         return $this->httpUtils->generateUri($request,$this->redirectUriName);
     }
-    public function generateState(Request $request, $name)
+    public function generateState()
     {
-        $state = $name . ':' . md5(microtime(true).uniqid('', true));
+        $state = md5(microtime(true).uniqid('', true));
         
-        if ($request->hasSession())
-        {
-            // This should probably be some sort of storage
-            $session = $request->getSession();
-            $session->set('cerad_user__oauth__state',$state);   
-        }
+        $this->storage->set(self::STORAGE_KEY_STATE,$state);
+        
         return $state;
     }
+    public function getStorage() { return $this->storage; }
 }

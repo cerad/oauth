@@ -28,9 +28,9 @@ class ProvidersCommand extends ContainerAwareCommand
     {
         echo "OAuth Providers\n";
         
-        $providers = $this->getContainer()->get('cerad_user__oauth__providers');
+        $providerManager = $this->getContainer()->get('cerad_user__oauth__provider_manager');
         
-        $provider1 = $providers->createFromName('google');
+        $provider1 = $providerManager->createFromName('google');
         
         echo sprintf("Provider1 name %s\n",$provider1->getName());
         
@@ -50,7 +50,7 @@ class ProvidersCommand extends ContainerAwareCommand
         $request->query->set('code', 'the_code');;
         $request->query->set('state',$state);
         
-        $provider2 = $providers->createFromRequest($request);
+        $provider2 = $providerManager->createFromRequest($request);
         
         echo "\n";
         echo sprintf("Provider2 name %s\n",$provider2->getName());
