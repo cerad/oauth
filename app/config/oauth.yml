@@ -16,6 +16,11 @@ cerad_user:
         class: Cerad\Bundle\UserBundle\OAuth\Provider\GithubProvider
         client_id:     %github_client_id%
         client_secret: %github_client_secret%
+      -
+        name: linkedin
+        class: Cerad\Bundle\UserBundle\OAuth\Provider\LinkedinProvider
+        client_id:     %linkedin_client_id%
+        client_secret: %linkedin_client_secret%
                 
 hwi_oauth:
     
